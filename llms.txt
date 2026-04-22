@@ -1,0 +1,29 @@
+# AI Commerce Store - LLM Access Guide
+
+## Scope
+This website provides machine-readable product, pricing, inventory, shipping, and policy data for AI agents.
+
+## Preferred Endpoints (v1)
+- GET /api/v1/products/search
+- GET /api/v1/products/{sku_id}
+- POST /api/v1/products/batch
+- GET /api/v1/compare?sku=SKU1,SKU2
+- POST /api/v1/cart/add
+- POST /api/v1/order/preview
+- POST /api/v1/order/submit
+
+## Query Rules
+- Use cursor pagination (`next_cursor`) for large result sets.
+- Prefer structured filters over keyword-only search.
+- Respect rate limits and retry with backoff on 429.
+
+## Purchase Safety
+- Never call order/submit without explicit human confirmation code.
+- Always surface total cost, return policy, and warranty before confirmation.
+
+## Data Freshness
+- Check `meta.generated_at` and `updated_at` on product objects.
+- Treat stale inventory as uncertain.
+
+## Contact
+- support@yourstore.com
