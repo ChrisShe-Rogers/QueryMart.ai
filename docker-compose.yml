@@ -1,4 +1,20 @@
 services:
+  api:
+    build: .
+    container_name: querymart-api
+    restart: unless-stopped
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-ai_commerce}
+      MYSQL_USER: ${MYSQL_USER:-querymart}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-querymartpass}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
   mysql:
     image: mysql:8.4
     container_name: querymart-mysql
