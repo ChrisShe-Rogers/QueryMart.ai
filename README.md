@@ -10,6 +10,7 @@ docker compose up -d
 ```
 
 The first boot starts MySQL 8.4 LTS, initializes `ai_commerce` from `mysql/init/*.sql`, builds the FastAPI service, and exposes the API on port `8000`.
+It also starts an OpenClaw gateway from the official GHCR image and exposes its Control UI on port `18789`.
 
 Connection defaults:
 
@@ -29,6 +30,16 @@ Base URL: http://127.0.0.1:8000
 OpenAPI: http://127.0.0.1:8000/docs
 Health: http://127.0.0.1:8000/health
 LLM Guide: /llms.txt
+```
+
+OpenClaw defaults:
+
+```text
+Image: ghcr.io/openclaw/openclaw:latest
+Control UI: http://127.0.0.1:18789
+Bridge port: 18790
+Gateway token: OPENCLAW_GATEWAY_TOKEN from .env
+Persistent data: openclaw_data Docker volume
 ```
 
 Core v1 endpoints:
