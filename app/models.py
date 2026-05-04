@@ -52,9 +52,54 @@ class SearchResponse(BaseModel):
     items: list[ProductOut]
 
 
+class SearchProductsToolRequest(BaseModel):
+    q: str | None = Field(default=None, max_length=255)
+    category: str | None = Field(default=None, max_length=64)
+    brand: str | None = Field(default=None, max_length=128)
+    price_min: Decimal | None = Field(default=None, ge=0)
+    price_max: Decimal | None = Field(default=None, ge=0)
+    sort: Literal["relevance", "price_asc", "price_desc", "delivery_asc"] = "relevance"
+    limit: int = Field(default=20, ge=1, le=100)
+    cursor: str | None = None
+
+
 class ProductResponse(BaseModel):
     meta: ApiMeta
     item: ProductOut
+
+
+class GetProductToolRequest(BaseModel):
+    sku_id: str = Field(min_length=1, max_length=64)
+
+
+class CheckInventoryToolRequest(BaseModel):
+    sku_id: str = Field(min_length=1, max_length=64)
+    requested_quantity: int = Field(default=1, ge=1, le=999)
+
+
+class CheckInventoryToolResponse(BaseModel):
+    meta: ApiMeta
+    sku_id: str
+    inventory: int
+    requested_quantity: int
+    available: bool
+    shortfall: int
+    updated_at: datetime
+
+
+class GetPriceToolRequest(BaseModel):
+    sku_id: str = Field(min_length=1, max_length=64)
+    quantity: int = Field(default=1, ge=1, le=999)
+
+
+class GetPriceToolResponse(BaseModel):
+    meta: ApiMeta
+    sku_id: str
+    unit_price: Decimal
+    quantity: int
+    line_subtotal: Decimal
+    currency: str
+    updated_at: datetime
 
 
 class BatchRequest(BaseModel):
@@ -126,6 +171,33 @@ class AddCartResponse(BaseModel):
     quantity: int
 
 
+class CartLineInput(BaseModel):
+    sku_id: str = Field(min_length=1, max_length=64)
+    quantity: int = Field(gt=0, le=999)
+
+
+class CartLineResult(BaseModel):
+    sku_id: str
+    quantity: int
+    ok: bool
+
+
+class CreateCartToolRequest(BaseModel):
+    user_ref: str | None = Field(default=None, max_length=128)
+    agent_ref: str | None = Field(default=None, max_length=128)
+    currency: str = Field(default="USD", min_length=3, max_length=3)
+    cart_token: str | None = Field(default=None, min_length=8, max_length=128)
+    items: list[CartLineInput] = Field(default_factory=list, max_length=50)
+
+
+class CreateCartToolResponse(BaseModel):
+    meta: ApiMeta
+    ok: bool
+    cart_token: str
+    currency: str
+    items: list[CartLineResult] = Field(default_factory=list)
+
+
 class OrderPreviewRequest(BaseModel):
     cart_token: str = Field(min_length=8, max_length=128)
     buyer_ref: str | None = Field(default=None, max_length=128)
@@ -167,3 +239,12 @@ class OrderSubmitResponse(BaseModel):
     ok: bool
     order_no: str
     status: Literal["submitted"]
+
+
+class SubmitOrderToolRequest(BaseModel):
+    order_no: str = Field(min_length=1, max_length=64)
+    confirmation_code: str = Field(min_length=4, max_length=32)
+    actor_ref: str | None = Field(default=None, max_length=128)
+    explicit_customer_confirmation: bool
+    risk_acknowledged: bool
+    confirmation_summary: str | None = Field(default=None, max_length=1000)

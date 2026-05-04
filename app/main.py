@@ -19,12 +19,20 @@ from app.models import (
     BatchRequest,
     BatchResponse,
     Bill,
+    CartLineResult,
+    CheckInventoryToolRequest,
+    CheckInventoryToolResponse,
     CompareDimension,
     CompareRecommendation,
     CompareResponse,
     CreateCartRequest,
     CreateCartResponse,
+    CreateCartToolRequest,
+    CreateCartToolResponse,
     DeliveryEstimate,
+    GetPriceToolRequest,
+    GetPriceToolResponse,
+    GetProductToolRequest,
     OrderPreviewRequest,
     OrderPreviewResponse,
     OrderSubmitRequest,
@@ -33,7 +41,9 @@ from app.models import (
     ProductOut,
     ProductResponse,
     ScoreBreakdown,
+    SearchProductsToolRequest,
     SearchResponse,
+    SubmitOrderToolRequest,
 )
 
 settings = get_settings()
@@ -262,6 +272,127 @@ def create_cart(req: CreateCartRequest) -> CreateCartResponse:
     currency = req.currency.upper()
     cart_token = create_cart_record(req.user_ref, req.agent_ref, currency)
     return CreateCartResponse(meta=meta(), ok=True, cart_token=cart_token, currency=currency)
+
+
+@app.post(
+    "/tools/qm_search_products",
+    response_model=SearchResponse,
+    tags=["Agent Tools"],
+    operation_id="qm_search_products",
+)
+def qm_search_products(req: SearchProductsToolRequest, request: Request) -> SearchResponse:
+    return search_products(
+        request=request,
+        q=req.q,
+        category=req.category,
+        brand=req.brand,
+        price_min=req.price_min,
+        price_max=req.price_max,
+        sort=req.sort,
+        limit=req.limit,
+        cursor=req.cursor,
+    )
+
+
+@app.post(
+    "/tools/qm_get_product",
+    response_model=ProductResponse,
+    tags=["Agent Tools"],
+    operation_id="qm_get_product",
+)
+def qm_get_product(req: GetProductToolRequest) -> ProductResponse:
+    return get_product(req.sku_id)
+
+
+@app.post(
+    "/tools/qm_check_inventory",
+    response_model=CheckInventoryToolResponse,
+    tags=["Agent Tools"],
+    operation_id="qm_check_inventory",
+)
+def qm_check_inventory(req: CheckInventoryToolRequest) -> CheckInventoryToolResponse:
+    product = get_product(req.sku_id).item
+    shortfall = max(req.requested_quantity - product.inventory, 0)
+    return CheckInventoryToolResponse(
+        meta=meta(),
+        sku_id=product.sku_id,
+        inventory=product.inventory,
+        requested_quantity=req.requested_quantity,
+        available=shortfall == 0,
+        shortfall=shortfall,
+        updated_at=product.updated_at,
+    )
+
+
+@app.post(
+    "/tools/qm_get_price",
+    response_model=GetPriceToolResponse,
+    tags=["Agent Tools"],
+    operation_id="qm_get_price",
+)
+def qm_get_price(req: GetPriceToolRequest) -> GetPriceToolResponse:
+    product = get_product(req.sku_id).item
+    return GetPriceToolResponse(
+        meta=meta(),
+        sku_id=product.sku_id,
+        unit_price=product.price,
+        quantity=req.quantity,
+        line_subtotal=product.price * req.quantity,
+        currency=product.currency,
+        updated_at=product.updated_at,
+    )
+
+
+@app.post(
+    "/tools/qm_create_cart",
+    response_model=CreateCartToolResponse,
+    tags=["Agent Tools"],
+    operation_id="qm_create_cart",
+)
+def qm_create_cart(req: CreateCartToolRequest) -> CreateCartToolResponse:
+    cart_token = req.cart_token or create_cart_record(req.user_ref, req.agent_ref, req.currency.upper())
+    added_items: list[CartLineResult] = []
+
+    for item in req.items:
+        add_to_cart(
+            AddCartRequest(
+                cart_token=cart_token,
+                sku_id=item.sku_id,
+                quantity=item.quantity,
+                user_ref=req.user_ref,
+                agent_ref=req.agent_ref,
+            )
+        )
+        added_items.append(CartLineResult(sku_id=item.sku_id, quantity=item.quantity, ok=True))
+
+    return CreateCartToolResponse(
+        meta=meta(),
+        ok=True,
+        cart_token=cart_token,
+        currency=req.currency.upper(),
+        items=added_items,
+    )
+
+
+@app.post(
+    "/tools/qm_submit_order",
+    response_model=OrderSubmitResponse,
+    tags=["Agent Tools"],
+    operation_id="qm_submit_order",
+)
+def qm_submit_order(req: SubmitOrderToolRequest, request: Request) -> OrderSubmitResponse:
+    if not req.explicit_customer_confirmation:
+        raise HTTPException(status_code=403, detail="Explicit customer confirmation is required")
+    if not req.risk_acknowledged:
+        raise HTTPException(status_code=403, detail="Risk acknowledgement is required")
+    return order_submit(
+        OrderSubmitRequest(
+            order_no=req.order_no,
+            confirmation_code=req.confirmation_code,
+            actor_ref=req.actor_ref,
+        ),
+        request,
+    )
 
 
 @app.get("/api/v1/products/search", response_model=SearchResponse)

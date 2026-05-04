@@ -1,0 +1,596 @@
+openapi: 3.1.0
+info:
+  title: QueryMart Agent Tools
+  version: 1.0.0
+  description: >
+    Real QueryMart agent tool endpoints exposed by the FastAPI service.
+    From the OpenClaw container, prefer http://host.docker.internal:8000.
+servers:
+  - url: http://host.docker.internal:8000
+    description: OpenClaw container to host QueryMart API
+  - url: http://127.0.0.1:8000
+    description: Host-local QueryMart API
+tags:
+  - name: Agent Tools
+paths:
+  /tools/qm_search_products:
+    post:
+      tags: [Agent Tools]
+      operationId: qm_search_products
+      summary: Search active products by keyword and structured filters.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SearchProductsToolRequest"
+            examples:
+              keyword:
+                value:
+                  q: cleaner
+                  limit: 5
+              budget:
+                value:
+                  category: electronics
+                  price_max: 50
+                  sort: price_asc
+                  limit: 10
+      responses:
+        "200":
+          description: Matching products.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /tools/qm_get_product:
+    post:
+      tags: [Agent Tools]
+      operationId: qm_get_product
+      summary: Fetch one product by SKU.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GetProductToolRequest"
+            examples:
+              product:
+                value:
+                  sku_id: DAY-CLN-0001
+      responses:
+        "200":
+          description: Product details.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /tools/qm_check_inventory:
+    post:
+      tags: [Agent Tools]
+      operationId: qm_check_inventory
+      summary: Check current inventory for a SKU and requested quantity.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckInventoryToolRequest"
+            examples:
+              inventory:
+                value:
+                  sku_id: DAY-CLN-0001
+                  requested_quantity: 2
+      responses:
+        "200":
+          description: Inventory availability.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckInventoryToolResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /tools/qm_get_price:
+    post:
+      tags: [Agent Tools]
+      operationId: qm_get_price
+      summary: Check current system price for a SKU and quantity.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GetPriceToolRequest"
+            examples:
+              price:
+                value:
+                  sku_id: DAY-CLN-0001
+                  quantity: 2
+      responses:
+        "200":
+          description: Current price.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetPriceToolResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /tools/qm_create_cart:
+    post:
+      tags: [Agent Tools]
+      operationId: qm_create_cart
+      summary: Create a cart, optionally adding SKU lines.
+      description: If items are supplied, each line is added after the existing cart inventory checks.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCartToolRequest"
+            examples:
+              emptyCart:
+                value:
+                  user_ref: web-user-123
+                  agent_ref: openclaw-sales
+                  currency: USD
+              cartWithItem:
+                value:
+                  user_ref: web-user-123
+                  agent_ref: openclaw-sales
+                  currency: USD
+                  items:
+                    - sku_id: DAY-CLN-0001
+                      quantity: 1
+      responses:
+        "200":
+          description: Cart created or updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateCartToolResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /tools/qm_submit_order:
+    post:
+      tags: [Agent Tools]
+      operationId: qm_submit_order
+      summary: Submit a pending order after explicit customer confirmation.
+      description: >
+        High-risk tool. The agent must call order preview first, show the customer
+        final order details, obtain explicit confirmation, and verify no escalation
+        condition is active.
+      x-risk-level: high
+      x-requires-human-confirmation: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitOrderToolRequest"
+            examples:
+              submit:
+                value:
+                  order_no: PV20260502010101000000
+                  confirmation_code: "1234"
+                  actor_ref: customer-123
+                  explicit_customer_confirmation: true
+                  risk_acknowledged: true
+                  confirmation_summary: Customer confirmed final items, quantities, and total.
+      responses:
+        "200":
+          description: Order submitted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderSubmitResponse"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+components:
+  responses:
+    BadRequest:
+      description: Invalid request.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: Forbidden or invalid confirmation.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Requested resource was not found.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Conflict:
+      description: Request conflicts with current state.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    ApiMeta:
+      type: object
+      required: [schema_version, api_version, generated_at]
+      properties:
+        schema_version:
+          type: string
+          example: "1.0"
+        api_version:
+          type: string
+          example: v1
+        generated_at:
+          type: string
+          format: date-time
+    ProductMediaOut:
+      type: object
+      required: [media_type, url, sort_order]
+      properties:
+        media_type:
+          type: string
+          example: image
+        url:
+          type: string
+        alt_text:
+          type: [string, "null"]
+        sort_order:
+          type: integer
+    ProductOut:
+      type: object
+      required:
+        - sku_id
+        - title
+        - category
+        - category_name
+        - price
+        - currency
+        - inventory
+        - condition_type
+        - attributes
+        - shipping_regions
+        - safety_certifications
+        - return_policy_days
+        - warranty_months
+        - delivery_days_min
+        - delivery_days_max
+        - rating_count
+        - media
+        - risk_flags
+        - updated_at
+      properties:
+        sku_id:
+          type: string
+        title:
+          type: string
+        subtitle:
+          type: [string, "null"]
+        description:
+          type: [string, "null"]
+        brand:
+          type: [string, "null"]
+        category:
+          type: string
+        category_name:
+          type: string
+        price:
+          type: number
+          minimum: 0
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+        inventory:
+          type: integer
+          minimum: 0
+        condition_type:
+          type: string
+        attributes:
+          type: object
+          additionalProperties: true
+        shipping_regions:
+          type: array
+          items:
+            type: string
+        shipping_fee_rule:
+          type: [object, "null"]
+          additionalProperties: true
+        safety_certifications:
+          type: array
+          items:
+            type: string
+        return_policy_days:
+          type: integer
+          minimum: 0
+        warranty_months:
+          type: integer
+          minimum: 0
+        delivery_days_min:
+          type: integer
+          minimum: 0
+        delivery_days_max:
+          type: integer
+          minimum: 0
+        rating_avg:
+          type: [number, "null"]
+          minimum: 0
+          maximum: 5
+        rating_count:
+          type: integer
+          minimum: 0
+        media:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductMediaOut"
+        risk_flags:
+          type: array
+          items:
+            type: string
+        updated_at:
+          type: string
+          format: date-time
+    SearchProductsToolRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        q:
+          type: [string, "null"]
+          maxLength: 255
+        category:
+          type: [string, "null"]
+          maxLength: 64
+        brand:
+          type: [string, "null"]
+          maxLength: 128
+        price_min:
+          type: [number, "null"]
+          minimum: 0
+        price_max:
+          type: [number, "null"]
+          minimum: 0
+        sort:
+          type: string
+          enum: [relevance, price_asc, price_desc, delivery_asc]
+          default: relevance
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        cursor:
+          type: [string, "null"]
+    SearchResponse:
+      type: object
+      required: [meta, total_estimate, items]
+      properties:
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
+        total_estimate:
+          type: integer
+          minimum: 0
+        next_cursor:
+          type: [string, "null"]
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductOut"
+    GetProductToolRequest:
+      type: object
+      required: [sku_id]
+      additionalProperties: false
+      properties:
+        sku_id:
+          type: string
+          minLength: 1
+          maxLength: 64
+    ProductResponse:
+      type: object
+      required: [meta, item]
+      properties:
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
+        item:
+          $ref: "#/components/schemas/ProductOut"
+    CheckInventoryToolRequest:
+      type: object
+      required: [sku_id]
+      additionalProperties: false
+      properties:
+        sku_id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        requested_quantity:
+          type: integer
+          minimum: 1
+          maximum: 999
+          default: 1
+    CheckInventoryToolResponse:
+      type: object
+      required: [meta, sku_id, inventory, requested_quantity, available, shortfall, updated_at]
+      properties:
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
+        sku_id:
+          type: string
+        inventory:
+          type: integer
+          minimum: 0
+        requested_quantity:
+          type: integer
+          minimum: 1
+        available:
+          type: boolean
+        shortfall:
+          type: integer
+          minimum: 0
+        updated_at:
+          type: string
+          format: date-time
+    GetPriceToolRequest:
+      type: object
+      required: [sku_id]
+      additionalProperties: false
+      properties:
+        sku_id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 999
+          default: 1
+    GetPriceToolResponse:
+      type: object
+      required: [meta, sku_id, unit_price, quantity, line_subtotal, currency, updated_at]
+      properties:
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
+        sku_id:
+          type: string
+        unit_price:
+          type: number
+          minimum: 0
+        quantity:
+          type: integer
+          minimum: 1
+        line_subtotal:
+          type: number
+          minimum: 0
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+        updated_at:
+          type: string
+          format: date-time
+    CartLineInput:
+      type: object
+      required: [sku_id, quantity]
+      additionalProperties: false
+      properties:
+        sku_id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 999
+    CartLineResult:
+      type: object
+      required: [sku_id, quantity, ok]
+      properties:
+        sku_id:
+          type: string
+        quantity:
+          type: integer
+        ok:
+          type: boolean
+    CreateCartToolRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        user_ref:
+          type: [string, "null"]
+          maxLength: 128
+        agent_ref:
+          type: [string, "null"]
+          maxLength: 128
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          default: USD
+        cart_token:
+          type: [string, "null"]
+          minLength: 8
+          maxLength: 128
+        items:
+          type: array
+          maxItems: 50
+          items:
+            $ref: "#/components/schemas/CartLineInput"
+          default: []
+    CreateCartToolResponse:
+      type: object
+      required: [meta, ok, cart_token, currency, items]
+      properties:
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
+        ok:
+          type: boolean
+        cart_token:
+          type: string
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CartLineResult"
+    SubmitOrderToolRequest:
+      type: object
+      required:
+        - order_no
+        - confirmation_code
+        - explicit_customer_confirmation
+        - risk_acknowledged
+      additionalProperties: false
+      properties:
+        order_no:
+          type: string
+          minLength: 1
+          maxLength: 64
+        confirmation_code:
+          type: string
+          minLength: 4
+          maxLength: 32
+          description: Code from order preview, with or without the CONFIRM prefix.
+        actor_ref:
+          type: [string, "null"]
+          maxLength: 128
+        explicit_customer_confirmation:
+          type: boolean
+          const: true
+        risk_acknowledged:
+          type: boolean
+          const: true
+        confirmation_summary:
+          type: [string, "null"]
+          maxLength: 1000
+    OrderSubmitResponse:
+      type: object
+      required: [meta, ok, order_no, status]
+      properties:
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
+        ok:
+          type: boolean
+        order_no:
+          type: string
+        status:
+          type: string
+          enum: [submitted]
+    ErrorResponse:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          oneOf:
+            - type: string
+            - type: object
+              additionalProperties: true
