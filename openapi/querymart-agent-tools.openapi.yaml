@@ -1,0 +1,1014 @@
+openapi: 3.1.0
+info:
+  title: QueryMart Sales Advisor Agent Tools
+  version: 1.0.0
+  description: Agent-facing OpenAPI generated from the live querymart-api /openapi.json.
+    All paths are real QueryMart API endpoints and can be called by sales advisor
+    agents.
+paths:
+  /health:
+    get:
+      summary: Check QueryMart API health.
+      operationId: qm_health
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: boolean
+                type: object
+                title: Response Health Health Get
+      tags:
+      - QueryMart Sales Advisor Tools
+      description: Use to verify the QueryMart API is reachable before a sales workflow.
+      x-agent-tool: true
+      x-agent-tool-name: qm_health
+      x-sales-advisor-use: Use to verify the QueryMart API is reachable before a sales
+        workflow.
+      x-risk-level: low
+      x-source-operation-id: health_health_get
+  /llms.txt:
+    get:
+      summary: Fetch the QueryMart LLM access guide.
+      operationId: qm_get_llms_guide
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/plain:
+              schema:
+                type: string
+      tags:
+      - QueryMart Sales Advisor Tools
+      description: Use when another agent or human needs a concise guide to available
+        commerce endpoints and safety rules.
+      x-agent-tool: true
+      x-agent-tool-name: qm_get_llms_guide
+      x-sales-advisor-use: Use when another agent or human needs a concise guide to
+        available commerce endpoints and safety rules.
+      x-risk-level: low
+      x-source-operation-id: llms_txt_llms_txt_get
+  /api/v1/cart/create:
+    post:
+      summary: Create an empty shopping cart.
+      operationId: qm_create_cart
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCartRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCartResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      tags:
+      - QueryMart Sales Advisor Tools
+      description: Use after the customer is ready to start a cart, before adding
+        items.
+      x-agent-tool: true
+      x-agent-tool-name: qm_create_cart
+      x-sales-advisor-use: Use after the customer is ready to start a cart, before
+        adding items.
+      x-risk-level: medium
+      x-source-operation-id: create_cart_api_v1_cart_create_post
+  /api/v1/products/search:
+    get:
+      summary: Search active products by keyword and structured filters.
+      operationId: qm_search_products
+      parameters:
+      - name: q
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 255
+          - type: 'null'
+          title: Q
+      - name: category
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 64
+          - type: 'null'
+          title: Category
+      - name: brand
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 128
+          - type: 'null'
+          title: Brand
+      - name: price_min
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: number
+            minimum: 0.0
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Price Min
+      - name: price_max
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: number
+            minimum: 0.0
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Price Max
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^(relevance|price_asc|price_desc|delivery_asc)$
+          default: relevance
+          title: Sort
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cursor
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      tags:
+      - QueryMart Sales Advisor Tools
+      description: Use to find candidate products that match the customer need, budget,
+        brand, category, or delivery preference.
+      x-agent-tool: true
+      x-agent-tool-name: qm_search_products
+      x-sales-advisor-use: Use to find candidate products that match the customer
+        need, budget, brand, category, or delivery preference.
+      x-risk-level: low
+      x-source-operation-id: search_products_api_v1_products_search_get
+  /api/v1/products/{sku_id}:
+    get:
+      summary: Fetch full product details for one SKU.
+      operationId: qm_get_product
+      parameters:
+      - name: sku_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Sku Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      tags:
+      - QueryMart Sales Advisor Tools
+      description: Use before making product-specific claims about price, inventory,
+        specifications, delivery, return policy, or warranty.
+      x-agent-tool: true
+      x-agent-tool-name: qm_get_product
+      x-sales-advisor-use: Use before making product-specific claims about price,
+        inventory, specifications, delivery, return policy, or warranty.
+      x-risk-level: low
+      x-source-operation-id: get_product_api_v1_products__sku_id__get
+  /api/v1/products/batch:
+    post:
+      summary: Fetch multiple products by SKU.
+      operationId: qm_batch_products
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      tags:
+      - QueryMart Sales Advisor Tools
+      description: Use to retrieve several known SKUs at once for recommendation,
+        availability checks, or comparison setup.
+      x-agent-tool: true
+      x-agent-tool-name: qm_batch_products
+      x-sales-advisor-use: Use to retrieve several known SKUs at once for recommendation,
+        availability checks, or comparison setup.
+      x-risk-level: low
+      x-source-operation-id: batch_products_api_v1_products_batch_post
+  /api/v1/compare:
+    get:
+      summary: Compare two to ten SKUs.
+      operationId: qm_compare_products
+      parameters:
+      - name: sku
+        in: query
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          title: Sku
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompareResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      tags:
+      - QueryMart Sales Advisor Tools
+      description: Use to explain practical differences and recommend the best fit
+        among shortlisted products.
+      x-agent-tool: true
+      x-agent-tool-name: qm_compare_products
+      x-sales-advisor-use: Use to explain practical differences and recommend the
+        best fit among shortlisted products.
+      x-risk-level: low
+      x-source-operation-id: compare_products_api_v1_compare_get
+  /api/v1/cart/add:
+    post:
+      summary: Add or update one product line in a cart.
+      operationId: qm_add_to_cart
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddCartRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddCartResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      tags:
+      - QueryMart Sales Advisor Tools
+      description: Use only after confirming the SKU and desired quantity with the
+        customer. The API rejects quantities above inventory.
+      x-agent-tool: true
+      x-agent-tool-name: qm_add_to_cart
+      x-sales-advisor-use: Use only after confirming the SKU and desired quantity
+        with the customer. The API rejects quantities above inventory.
+      x-risk-level: medium
+      x-source-operation-id: add_to_cart_api_v1_cart_add_post
+  /api/v1/order/preview:
+    post:
+      summary: Create an order preview with totals and a confirmation code hint.
+      operationId: qm_preview_order
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderPreviewRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderPreviewResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      tags:
+      - QueryMart Sales Advisor Tools
+      description: Use before final submission. Show the customer items, quantities,
+        total, delivery estimate, policies, and confirmation code hint.
+      x-agent-tool: true
+      x-agent-tool-name: qm_preview_order
+      x-sales-advisor-use: Use before final submission. Show the customer items, quantities,
+        total, delivery estimate, policies, and confirmation code hint.
+      x-risk-level: high
+      x-source-operation-id: order_preview_api_v1_order_preview_post
+  /api/v1/order/submit:
+    post:
+      summary: Submit a pending order after explicit customer confirmation.
+      operationId: qm_submit_order
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderSubmitRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderSubmitResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      tags:
+      - QueryMart Sales Advisor Tools
+      description: High-risk. Use only after qm_preview_order and explicit customer
+        confirmation. Never call during price disputes, complaints, or payment anomalies.
+      x-agent-tool: true
+      x-agent-tool-name: qm_submit_order
+      x-sales-advisor-use: High-risk. Use only after qm_preview_order and explicit
+        customer confirmation. Never call during price disputes, complaints, or payment
+        anomalies.
+      x-risk-level: critical
+      x-requires-explicit-customer-confirmation: true
+      x-must-preview-before-submit: true
+      x-source-operation-id: order_submit_api_v1_order_submit_post
+components:
+  schemas:
+    AddCartRequest:
+      properties:
+        cart_token:
+          anyOf:
+          - type: string
+            maxLength: 128
+            minLength: 8
+          - type: 'null'
+          title: Cart Token
+        sku_id:
+          type: string
+          maxLength: 64
+          minLength: 1
+          title: Sku Id
+        quantity:
+          type: integer
+          maximum: 999.0
+          exclusiveMinimum: 0.0
+          title: Quantity
+        user_ref:
+          anyOf:
+          - type: string
+            maxLength: 128
+          - type: 'null'
+          title: User Ref
+        agent_ref:
+          anyOf:
+          - type: string
+            maxLength: 128
+          - type: 'null'
+          title: Agent Ref
+      type: object
+      required:
+      - sku_id
+      - quantity
+      title: AddCartRequest
+    AddCartResponse:
+      properties:
+        meta:
+          $ref: '#/components/schemas/ApiMeta'
+        ok:
+          type: boolean
+          title: Ok
+        cart_token:
+          type: string
+          title: Cart Token
+        sku_id:
+          type: string
+          title: Sku Id
+        quantity:
+          type: integer
+          title: Quantity
+      type: object
+      required:
+      - meta
+      - ok
+      - cart_token
+      - sku_id
+      - quantity
+      title: AddCartResponse
+    ApiMeta:
+      properties:
+        schema_version:
+          type: string
+          title: Schema Version
+          default: '1.0'
+        api_version:
+          type: string
+          title: Api Version
+          default: v1
+        generated_at:
+          type: string
+          format: date-time
+          title: Generated At
+      type: object
+      required:
+      - generated_at
+      title: ApiMeta
+    BatchRequest:
+      properties:
+        sku_ids:
+          items:
+            type: string
+          type: array
+          maxItems: 100
+          minItems: 1
+          title: Sku Ids
+      type: object
+      required:
+      - sku_ids
+      title: BatchRequest
+    BatchResponse:
+      properties:
+        meta:
+          $ref: '#/components/schemas/ApiMeta'
+        items:
+          items:
+            $ref: '#/components/schemas/ProductOut'
+          type: array
+          title: Items
+        missing_sku_ids:
+          items:
+            type: string
+          type: array
+          title: Missing Sku Ids
+      type: object
+      required:
+      - meta
+      - items
+      title: BatchResponse
+    Bill:
+      properties:
+        subtotal:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Subtotal
+        shipping_fee:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Shipping Fee
+        tax_fee:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Tax Fee
+        total:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Total
+        currency:
+          type: string
+          title: Currency
+      type: object
+      required:
+      - subtotal
+      - shipping_fee
+      - tax_fee
+      - total
+      - currency
+      title: Bill
+    CompareDimension:
+      properties:
+        key:
+          type: string
+          title: Key
+        label:
+          type: string
+          title: Label
+        values:
+          additionalProperties: true
+          type: object
+          title: Values
+      type: object
+      required:
+      - key
+      - label
+      - values
+      title: CompareDimension
+    CompareRecommendation:
+      properties:
+        top_sku:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Top Sku
+        why_recommended:
+          items:
+            type: string
+          type: array
+          title: Why Recommended
+        risk_flags:
+          additionalProperties:
+            items:
+              type: string
+            type: array
+          type: object
+          title: Risk Flags
+        score_breakdown:
+          additionalProperties:
+            $ref: '#/components/schemas/ScoreBreakdown'
+          type: object
+          title: Score Breakdown
+      type: object
+      required:
+      - top_sku
+      - why_recommended
+      - risk_flags
+      - score_breakdown
+      title: CompareRecommendation
+    CompareResponse:
+      properties:
+        meta:
+          $ref: '#/components/schemas/ApiMeta'
+        sku_ids:
+          items:
+            type: string
+          type: array
+          title: Sku Ids
+        common_dimensions:
+          items:
+            $ref: '#/components/schemas/CompareDimension'
+          type: array
+          title: Common Dimensions
+        category_dimensions:
+          items:
+            $ref: '#/components/schemas/CompareDimension'
+          type: array
+          title: Category Dimensions
+        recommendation:
+          $ref: '#/components/schemas/CompareRecommendation'
+      type: object
+      required:
+      - meta
+      - sku_ids
+      - common_dimensions
+      - category_dimensions
+      - recommendation
+      title: CompareResponse
+    CreateCartRequest:
+      properties:
+        user_ref:
+          anyOf:
+          - type: string
+            maxLength: 128
+          - type: 'null'
+          title: User Ref
+        agent_ref:
+          anyOf:
+          - type: string
+            maxLength: 128
+          - type: 'null'
+          title: Agent Ref
+        currency:
+          type: string
+          maxLength: 3
+          minLength: 3
+          title: Currency
+          default: USD
+      type: object
+      title: CreateCartRequest
+    CreateCartResponse:
+      properties:
+        meta:
+          $ref: '#/components/schemas/ApiMeta'
+        ok:
+          type: boolean
+          title: Ok
+        cart_token:
+          type: string
+          title: Cart Token
+        currency:
+          type: string
+          title: Currency
+      type: object
+      required:
+      - meta
+      - ok
+      - cart_token
+      - currency
+      title: CreateCartResponse
+    DeliveryEstimate:
+      properties:
+        min_days:
+          type: integer
+          title: Min Days
+        max_days:
+          type: integer
+          title: Max Days
+      type: object
+      required:
+      - min_days
+      - max_days
+      title: DeliveryEstimate
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    OrderPreviewRequest:
+      properties:
+        cart_token:
+          type: string
+          maxLength: 128
+          minLength: 8
+          title: Cart Token
+        buyer_ref:
+          anyOf:
+          - type: string
+            maxLength: 128
+          - type: 'null'
+          title: Buyer Ref
+        agent_ref:
+          anyOf:
+          - type: string
+            maxLength: 128
+          - type: 'null'
+          title: Agent Ref
+      type: object
+      required:
+      - cart_token
+      title: OrderPreviewRequest
+    OrderPreviewResponse:
+      properties:
+        meta:
+          $ref: '#/components/schemas/ApiMeta'
+        order_no:
+          type: string
+          title: Order No
+        status:
+          type: string
+          const: pending_confirm
+          title: Status
+        confirmation_code_hint:
+          type: string
+          title: Confirmation Code Hint
+        bill:
+          $ref: '#/components/schemas/Bill'
+        delivery:
+          $ref: '#/components/schemas/DeliveryEstimate'
+        policies:
+          additionalProperties: true
+          type: object
+          title: Policies
+        items:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          title: Items
+      type: object
+      required:
+      - meta
+      - order_no
+      - status
+      - confirmation_code_hint
+      - bill
+      - delivery
+      - policies
+      - items
+      title: OrderPreviewResponse
+    OrderSubmitRequest:
+      properties:
+        order_no:
+          type: string
+          maxLength: 64
+          minLength: 1
+          title: Order No
+        confirmation_code:
+          type: string
+          maxLength: 32
+          minLength: 4
+          title: Confirmation Code
+        actor_ref:
+          anyOf:
+          - type: string
+            maxLength: 128
+          - type: 'null'
+          title: Actor Ref
+      type: object
+      required:
+      - order_no
+      - confirmation_code
+      title: OrderSubmitRequest
+    OrderSubmitResponse:
+      properties:
+        meta:
+          $ref: '#/components/schemas/ApiMeta'
+        ok:
+          type: boolean
+          title: Ok
+        order_no:
+          type: string
+          title: Order No
+        status:
+          type: string
+          const: submitted
+          title: Status
+      type: object
+      required:
+      - meta
+      - ok
+      - order_no
+      - status
+      title: OrderSubmitResponse
+    ProductMediaOut:
+      properties:
+        media_type:
+          type: string
+          title: Media Type
+        url:
+          type: string
+          title: Url
+        alt_text:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Alt Text
+        sort_order:
+          type: integer
+          title: Sort Order
+      type: object
+      required:
+      - media_type
+      - url
+      - sort_order
+      title: ProductMediaOut
+    ProductOut:
+      properties:
+        sku_id:
+          type: string
+          title: Sku Id
+        title:
+          type: string
+          title: Title
+        subtitle:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Subtitle
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        brand:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Brand
+        category:
+          type: string
+          title: Category
+        category_name:
+          type: string
+          title: Category Name
+        price:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Price
+        currency:
+          type: string
+          title: Currency
+        inventory:
+          type: integer
+          title: Inventory
+        condition_type:
+          type: string
+          title: Condition Type
+        attributes:
+          additionalProperties: true
+          type: object
+          title: Attributes
+        shipping_regions:
+          items:
+            type: string
+          type: array
+          title: Shipping Regions
+        shipping_fee_rule:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Shipping Fee Rule
+        safety_certifications:
+          items:
+            type: string
+          type: array
+          title: Safety Certifications
+        return_policy_days:
+          type: integer
+          title: Return Policy Days
+        warranty_months:
+          type: integer
+          title: Warranty Months
+        delivery_days_min:
+          type: integer
+          title: Delivery Days Min
+        delivery_days_max:
+          type: integer
+          title: Delivery Days Max
+        rating_avg:
+          anyOf:
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Rating Avg
+        rating_count:
+          type: integer
+          title: Rating Count
+        media:
+          items:
+            $ref: '#/components/schemas/ProductMediaOut'
+          type: array
+          title: Media
+        risk_flags:
+          items:
+            type: string
+          type: array
+          title: Risk Flags
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+      type: object
+      required:
+      - sku_id
+      - title
+      - category
+      - category_name
+      - price
+      - currency
+      - inventory
+      - condition_type
+      - return_policy_days
+      - warranty_months
+      - delivery_days_min
+      - delivery_days_max
+      - rating_count
+      - updated_at
+      title: ProductOut
+    ProductResponse:
+      properties:
+        meta:
+          $ref: '#/components/schemas/ApiMeta'
+        item:
+          $ref: '#/components/schemas/ProductOut'
+      type: object
+      required:
+      - meta
+      - item
+      title: ProductResponse
+    ScoreBreakdown:
+      properties:
+        demand_match:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Demand Match
+        total_cost:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Total Cost
+        delivery_speed:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Delivery Speed
+        after_sale:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: After Sale
+        review_trust:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Review Trust
+        final_score:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Final Score
+      type: object
+      required:
+      - demand_match
+      - total_cost
+      - delivery_speed
+      - after_sale
+      - review_trust
+      - final_score
+      title: ScoreBreakdown
+    SearchResponse:
+      properties:
+        meta:
+          $ref: '#/components/schemas/ApiMeta'
+        total_estimate:
+          type: integer
+          title: Total Estimate
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
+        items:
+          items:
+            $ref: '#/components/schemas/ProductOut'
+          type: array
+          title: Items
+      type: object
+      required:
+      - meta
+      - total_estimate
+      - items
+      title: SearchResponse
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+servers:
+- url: http://host.docker.internal:8000
+  description: OpenClaw container to host QueryMart API
+- url: http://127.0.0.1:8000
+  description: Host-local QueryMart API
+tags:
+- name: QueryMart Sales Advisor Tools
+  description: Real QueryMart API operations available to sales advisor agents.
